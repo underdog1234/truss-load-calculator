@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Truss and Motor Load Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="panel">
+        <button class="panel-toggle static" type="button" disabled>
+          <span>Truss Load Calculator</span>
+        </button>
+        <div class="panel-body">
+          <p class="lede">Browser-based planning tool for truss pickup reactions, motor usage, and roof point loading.</p>
+          <p class="warning-banner">
+            Use this for preliminary planning only. Final rigging sign-off must follow manufacturer load tables,
+            venue rules, and a qualified rigger or engineer.
+          </p>
+        </div>
+      </div>
+
+      <div class="panel collapsible-panel is-collapsed" data-panel-id="truss-setup">
+        <button class="panel-toggle" type="button" data-panel-toggle>
+          <span>Truss Setup</span>
+        </button>
+        <div class="panel-body">
+          <label>
+            Truss Type
+            <select id="trussType"></select>
+          </label>
+          <label>
+            Truss Length (m)
+            <input id="trussLength" type="text" inputmode="decimal" value="12">
+          </label>
+        <label>
+          Global Roof Point WLL (kg)
+          <input id="globalRoofPointWll" type="text" inputmode="decimal" value="1000">
+        </label>
+        <label class="check-row">
+          <span>Include Pickup Hardware Weight</span>
+          <input id="includeHardwareWeight" type="checkbox" checked>
+        </label>
+        <label>
+          Hardware Weight Per Pickup (kg)
+          <input id="hardwareWeightPerPickup" type="text" inputmode="decimal" value="8">
+        </label>
+        <label>
+          Dynamic Load Factor (x)
+          <input id="dynamicLoadFactor" type="text" inputmode="decimal" value="1.00">
+        </label>
+          <div class="preset-group" id="dynamicPresetGroup">
+            <button type="button" class="secondary" data-dynamic-preset="1.00">Static 1.00</button>
+            <button type="button" class="secondary" data-dynamic-preset="1.20">Careful 1.20</button>
+            <button type="button" class="secondary" data-dynamic-preset="1.33">Event 1.33</button>
+            <button type="button" class="secondary" data-dynamic-preset="2.00">Conservative 2.00</button>
+          </div>
+          <div class="totals-grid">
+            <div class="stat-item"><span class="muted">Self Weight:</span><strong id="trussSelfWeight">0 kg</strong></div>
+            <div class="stat-item"><span class="muted">Applied Load:</span><strong id="appliedWeight">0 kg</strong></div>
+            <div class="stat-item"><span class="muted">Total Load:</span><strong id="totalWeight">0 kg</strong></div>
+            <div class="stat-item"><span class="muted">Factored Total:</span><strong id="factoredTotalWeight">0 kg</strong></div>
+            <div class="stat-item"><span class="muted">Dynamic Factor:</span><strong id="dynamicFactorReadout">1.00 x</strong></div>
+            <div class="stat-item"><span class="muted">Center of Gravity:</span><strong id="centerOfGravity">0.00 m</strong></div>
+          </div>
+          <div class="action-row">
+            <button id="clearAllBtn" class="ghost" type="button">Clear All</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel collapsible-panel is-collapsed" data-panel-id="supports">
+        <button class="panel-toggle" type="button" data-panel-toggle>
+          <span>Motors / Roof Points</span>
+        </button>
+        <div class="panel-body">
+          <div class="panel-header">
+            <div class="button-group">
+              <button id="applyGlobalWllBtn" class="secondary" type="button">Apply Global WLL</button>
+              <button id="clearSupportsBtn" class="ghost" type="button">Clear Roof Points</button>
+              <button id="addSupportBtn" type="button">Add Pickup</button>
+            </div>
+          </div>
+          <div id="supportsList" class="stack"></div>
+        </div>
+      </div>
+
+      <div class="panel collapsible-panel is-collapsed" data-panel-id="motor-spacing">
+        <button class="panel-toggle" type="button" data-panel-toggle>
+          <span>Motor Spacing</span>
+        </button>
+        <div class="panel-body">
+          <label>
+            Motor Spacing For Auto Distribute (m)
+            <input id="motorSpacing" type="text" inputmode="decimal" value="4">
+          </label>
+          <div class="action-row">
+            <button id="spacingDistributeBtn" type="button">Use Set Spacing</button>
+            <button id="spanDistributeBtn" class="secondary" type="button">Distribute Across Span</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel collapsible-panel is-collapsed" data-panel-id="loads">
+        <button class="panel-toggle" type="button" data-panel-toggle>
+          <span>Loads</span>
+        </button>
+        <div class="panel-body">
+          <div class="panel-header">
+            <div class="button-group">
+              <button id="clearLoadsBtn" class="ghost" type="button">Clear Loads</button>
+              <button id="addLoadBtn" type="button">Add Load</button>
+            </div>
+          </div>
+          <div id="loadsList" class="stack"></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="panel canvas-panel">
+        <div class="panel-header">
+          <h2>Truss View</h2>
+          <div class="legend">
+            <span><i class="legend-support"></i> Pickup</span>
+            <span><i class="legend-load"></i> Load Block</span>
+            <span><i class="legend-cog"></i> COG</span>
+          </div>
+        </div>
+        <svg id="trussSvg" viewBox="0 0 1200 460" role="img" aria-label="Interactive truss diagram"></svg>
+      </section>
+
+      <section class="panel">
+        <h2>Load Readout</h2>
+        <div id="summaryCards" class="summary-cards"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Rigging Notes</h2>
+        <div id="warningsList" class="stack notes"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Export</h2>
+          <button id="exportBtn" type="button">Export CSV</button>
+        </div>
+        <p class="muted small">Exports truss setup, pickups, loads, and calculated reactions as a CSV worksheet.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
