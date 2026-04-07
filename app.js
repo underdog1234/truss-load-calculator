@@ -5,7 +5,8 @@ const TRUSS_TYPES = [
     selfWeightKgPerM: 14.78,
     note: "Self weight based on Global Truss F54 450 cm product data and manufacturer load table.",
     visualProfile: "box-heavy",
-    nodeSpacingM: 0.5
+    nodeSpacingM: 0.5,
+    segmentLengthsM: [3, 2, 1, 0.5]
   },
   {
     id: "global-f45",
@@ -13,7 +14,8 @@ const TRUSS_TYPES = [
     selfWeightKgPerM: 14.22,
     note: "Self weight based on Global Truss F45 200 cm product data. Table check uses manufacturer load-table data available for this LED-focused truss.",
     visualProfile: "box-medium",
-    nodeSpacingM: 0.5
+    nodeSpacingM: 0.5,
+    segmentLengthsM: [3, 2, 1, 0.5]
   },
   {
     id: "global-f35",
@@ -21,7 +23,8 @@ const TRUSS_TYPES = [
     selfWeightKgPerM: 11.9,
     note: "Self weight based on Global Truss F35 200 cm product data. Table check uses the manufacturer's central-bottom-chord loading data for this LED truss.",
     visualProfile: "box-light",
-    nodeSpacingM: 0.5
+    nodeSpacingM: 0.5,
+    segmentLengthsM: [3, 2, 1, 0.5]
   },
   {
     id: "global-f34-black",
@@ -29,7 +32,8 @@ const TRUSS_TYPES = [
     selfWeightKgPerM: 6.05,
     note: "Self weight based on the official Global Truss F34 Square Truss Black 3 m segment. Stored loading table uses the official F34 load-span table reduced per ANSI E1.21. Manufacturer note: loads must be attached to truss panel points.",
     visualProfile: "box-light",
-    nodeSpacingM: 0.5
+    nodeSpacingM: 0.5,
+    segmentLengthsM: [3, 2, 1, 0.5]
   },
   {
     id: "showquip-380-tri",
@@ -37,7 +41,8 @@ const TRUSS_TYPES = [
     selfWeightKgPerM: 7.5,
     note: "Self weight and loading table based on the ShowQuip 380 TRI-TRUSS technical specification sheet you supplied.",
     visualProfile: "tri",
-    nodeSpacingM: 0.6
+    nodeSpacingM: 0.6,
+    segmentLengthsM: [2.4, 1.2, 0.6]
   }
 ];
 
@@ -45,8 +50,8 @@ const state = {
   trussTypeId: TRUSS_TYPES[1].id,
   trussLengthM: 12,
   supports: [
-    { id: crypto.randomUUID(), label: "Motor A", positionM: 2, capacityKg: 1000, roofPointWllKg: 1000, capacityMode: "preset", motorSelfWeightKg: 43 },
-    { id: crypto.randomUUID(), label: "Motor B", positionM: 10, capacityKg: 1000, roofPointWllKg: 1000, capacityMode: "preset", motorSelfWeightKg: 43 }
+    { id: crypto.randomUUID(), label: "Motor A", positionM: 2, capacityKg: 1000, roofPointWllKg: 1000, capacityMode: "preset", motorSelfWeightKg: 74.3 },
+    { id: crypto.randomUUID(), label: "Motor B", positionM: 10, capacityKg: 1000, roofPointWllKg: 1000, capacityMode: "preset", motorSelfWeightKg: 74.3 }
   ],
   loads: [
     { id: crypto.randomUUID(), label: "LED Wall", startM: 4, widthM: 2.4, weightKg: 280, color: "#006d77" },
@@ -55,8 +60,8 @@ const state = {
 };
 
 const MOTOR_CAPACITY_PRESETS = [
-  { value: 500, label: "1/2 Tonne", motorSelfWeightKg: 24 },
-  { value: 1000, label: "1 Tonne", motorSelfWeightKg: 43 }
+  { value: 500, label: "1/2 Tonne", motorSelfWeightKg: 49.3 },
+  { value: 1000, label: "1 Tonne", motorSelfWeightKg: 74.3 }
 ];
 
 const TRUSS_LOADING_TABLES = {
@@ -163,6 +168,8 @@ let globalRoofPointWllKg = 1000;
 let includeHardwareWeight = true;
 let hardwareWeightPerPickupKg = 8;
 let dynamicLoadFactor = 1;
+let projectName = "Untitled Project";
+const PIECE_LENGTH_SCALE = 100;
 
 document.addEventListener("DOMContentLoaded", () => {
   cacheRefs();
@@ -173,6 +180,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function cacheRefs() {
+  refs.projectName = document.getElementById("projectName");
+  refs.projectTitle = document.getElementById("projectTitle");
   refs.trussType = document.getElementById("trussType");
   refs.trussLength = document.getElementById("trussLength");
   refs.globalRoofPointWll = document.getElementById("globalRoofPointWll");
@@ -199,11 +208,18 @@ function cacheRefs() {
   refs.motorSpacing = document.getElementById("motorSpacing");
   refs.spacingDistributeBtn = document.getElementById("spacingDistributeBtn");
   refs.spanDistributeBtn = document.getElementById("spanDistributeBtn");
+  refs.betweenDistributeBtn = document.getElementById("betweenDistributeBtn");
   refs.clearAllBtn = document.getElementById("clearAllBtn");
   refs.exportBtn = document.getElementById("exportBtn");
+  refs.exportSettingsBtn = document.getElementById("exportSettingsBtn");
+  refs.importSettingsBtn = document.getElementById("importSettingsBtn");
+  refs.importSettingsFile = document.getElementById("importSettingsFile");
+  refs.savePdfBtn = document.getElementById("savePdfBtn");
+  refs.printBtn = document.getElementById("printBtn");
 }
 
 function populateTrussTypes() {
+  refs.projectName.value = projectName;
   refs.trussType.innerHTML = TRUSS_TYPES.map((type) => (
     `<option value="${type.id}">${type.name}</option>`
   )).join("");
@@ -227,6 +243,12 @@ function bindPanelToggles() {
 }
 
 function bindTopLevelEvents() {
+  refs.projectName.addEventListener("input", (event) => {
+    projectName = event.target.value.trim() || "Untitled Project";
+    document.title = `${projectName} - Truss Load Calculator`;
+    render();
+  });
+
   refs.trussType.addEventListener("change", (event) => {
     state.trussTypeId = event.target.value;
     render();
@@ -278,7 +300,7 @@ function bindTopLevelEvents() {
       capacityKg: 1000,
       roofPointWllKg: globalRoofPointWllKg,
       capacityMode: "preset",
-      motorSelfWeightKg: 43
+      motorSelfWeightKg: 74.3
     });
     render();
   });
@@ -328,6 +350,11 @@ function bindTopLevelEvents() {
     render();
   });
 
+  refs.betweenDistributeBtn.addEventListener("click", () => {
+    distributeSupportsBetweenEnds();
+    render();
+  });
+
   refs.clearAllBtn.addEventListener("click", () => {
     clearAllData();
     render();
@@ -335,6 +362,24 @@ function bindTopLevelEvents() {
 
   refs.exportBtn.addEventListener("click", () => {
     exportCsv();
+  });
+
+  refs.exportSettingsBtn.addEventListener("click", () => {
+    exportSettings();
+  });
+
+  refs.importSettingsBtn.addEventListener("click", () => {
+    refs.importSettingsFile.click();
+  });
+
+  refs.importSettingsFile.addEventListener("change", importSettings);
+
+  refs.savePdfBtn.addEventListener("click", () => {
+    savePdfReport();
+  });
+
+  refs.printBtn.addEventListener("click", () => {
+    window.print();
   });
 
   refs.trussSvg.addEventListener("pointermove", onPointerMove);
@@ -487,6 +532,22 @@ function distributeSupportsAcrossSpan() {
   }));
 }
 
+function distributeSupportsBetweenEnds() {
+  const count = state.supports.length;
+  if (count < 3) return;
+
+  const sortedSupports = [...state.supports].sort((a, b) => a.positionM - b.positionM);
+  const leftPositionM = sortedSupports[0].positionM;
+  const rightPositionM = sortedSupports[sortedSupports.length - 1].positionM;
+  const usableSpanM = rightPositionM - leftPositionM;
+  if (usableSpanM <= 0) return;
+
+  sortedSupports.forEach((support, index) => {
+    support.positionM = Number((leftPositionM + (usableSpanM * index) / Math.max(count - 1, 1)).toFixed(2));
+  });
+  state.supports = sortedSupports;
+}
+
 function clearAllData() {
   state.supports = [];
   state.loads = [];
@@ -546,6 +607,116 @@ function exportCsv() {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function exportSettings() {
+  const payload = {
+    version: 1,
+    projectName,
+    trussTypeId: state.trussTypeId,
+    trussLengthM: state.trussLengthM,
+    motorSpacingM,
+    globalRoofPointWllKg,
+    includeHardwareWeight,
+    hardwareWeightPerPickupKg,
+    dynamicLoadFactor,
+    supports: state.supports,
+    loads: state.loads
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slugify(projectName)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  alert("Project settings exported as JSON.");
+}
+
+function importSettings(event) {
+  const [file] = event.target.files || [];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const payload = JSON.parse(String(reader.result || "{}"));
+      projectName = String(payload.projectName || "Untitled Project");
+      state.trussTypeId = payload.trussTypeId || state.trussTypeId;
+      state.trussLengthM = clampNumber(Number(payload.trussLengthM) || state.trussLengthM, 1, 100);
+      motorSpacingM = clampNumber(Number(payload.motorSpacingM) || motorSpacingM, 0.1, 100);
+      globalRoofPointWllKg = clampNumber(Number(payload.globalRoofPointWllKg) || globalRoofPointWllKg, 0.01, 1000000000);
+      includeHardwareWeight = payload.includeHardwareWeight !== undefined ? Boolean(payload.includeHardwareWeight) : includeHardwareWeight;
+      hardwareWeightPerPickupKg = clampNumber(Number(payload.hardwareWeightPerPickupKg) || hardwareWeightPerPickupKg, 0, 1000000000);
+      dynamicLoadFactor = clampNumber(Number(payload.dynamicLoadFactor) || dynamicLoadFactor, 1, 10);
+      state.supports = Array.isArray(payload.supports) ? payload.supports : [];
+      state.loads = Array.isArray(payload.loads) ? payload.loads : [];
+      document.title = `${projectName} - Truss Load Calculator`;
+      refs.importSettingsFile.value = "";
+      populateTrussTypes();
+      render();
+      alert("Project settings imported.");
+    } catch (error) {
+      alert("Could not import settings file. Please choose a valid project JSON file.");
+      refs.importSettingsFile.value = "";
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function savePdfReport() {
+  const { jsPDF } = window.jspdf || {};
+  if (!window.html2canvas || !jsPDF) {
+    alert("PDF export library is not available. Please check your internet connection and try again.");
+    return;
+  }
+
+  const mainContent = document.querySelector(".main");
+  if (!mainContent) {
+    alert("Could not find the report content to export.");
+    return;
+  }
+
+  const originalScrollTop = mainContent.scrollTop;
+  mainContent.scrollTop = 0;
+
+  try {
+    const canvas = await window.html2canvas(mainContent, {
+      backgroundColor: "#0b1220",
+      scale: 2,
+      useCORS: true,
+      windowWidth: document.documentElement.scrollWidth
+    });
+
+    const imageData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imageWidth = pageWidth - 16;
+    const imageHeight = (canvas.height * imageWidth) / canvas.width;
+
+    let remainingHeight = imageHeight;
+    let positionY = 8;
+
+    pdf.addImage(imageData, "PNG", 8, positionY, imageWidth, imageHeight);
+    remainingHeight -= (pageHeight - 16);
+
+    while (remainingHeight > 0) {
+      pdf.addPage();
+      positionY = 8 - (imageHeight - remainingHeight);
+      pdf.addImage(imageData, "PNG", 8, positionY, imageWidth, imageHeight);
+      remainingHeight -= (pageHeight - 16);
+    }
+
+    pdf.save(`${slugify(projectName)}.pdf`);
+  } catch (error) {
+    alert("Could not save PDF report. Please try again.");
+  } finally {
+    mainContent.scrollTop = originalScrollTop;
+  }
 }
 
 function renderSupports(results) {
@@ -631,7 +802,10 @@ function renderLoads(results) {
     <div class="card">
       <div class="card-title-row">
         <strong>${escapeHtml(load.label)}</strong>
-        <button class="ghost" type="button" data-action="remove-load" data-load-id="${load.id}">Remove</button>
+        <div class="button-group">
+          <button class="secondary" type="button" data-action="center-load" data-load-id="${load.id}">Center Load</button>
+          <button class="ghost" type="button" data-action="remove-load" data-load-id="${load.id}">Remove</button>
+        </div>
       </div>
       <div class="card-header">
         <label>
@@ -667,9 +841,19 @@ function renderLoads(results) {
       render();
     });
   });
+  refs.loadsList.querySelectorAll("[data-action='center-load']").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.getAttribute("data-load-id");
+      const load = state.loads.find((item) => item.id === id);
+      if (!load) return;
+      load.startM = Number((Math.max(0, state.trussLengthM - load.widthM) / 2).toFixed(2));
+      render();
+    });
+  });
 }
 
 function renderSummary(results) {
+  refs.projectTitle.textContent = projectName;
   refs.trussSelfWeight.textContent = formatKg(results.trussSelfWeightKg);
   refs.appliedWeight.textContent = formatKg(results.appliedLoadKg);
   refs.totalWeight.textContent = formatKg(results.totalLoadKg);
@@ -805,6 +989,16 @@ function renderWarnings(results) {
     {
       level: "info",
       text: "Current best-practice planning assumption in this tool: truss self weight is distributed through the pickups, hoist dead weight is added to the roof point side, and optional setup hardware weight per pickup can be included globally. Other items like bridles or secondary structures still need separate modelling."
+    },
+    {
+      level: results.trussBuildPlan.isExact ? "info" : "warning",
+      text: results.trussBuildPlan.summary
+    },
+    {
+      level: results.trussBuildPlan.isExact ? "info" : "warning",
+      text: results.trussBuildPlan.parts.length
+        ? `Truss pieces: ${results.trussBuildPlan.parts.map((part) => `${part.lengthM.toFixed(2)} m`).join(" + ")}`
+        : "Truss pieces: no exact build available from stored stock lengths."
     }
   ];
 
@@ -824,7 +1018,7 @@ function renderSvg(results) {
   const trussStartX = toX(0);
   const trussEndX = toX(state.trussLengthM);
   const nodePositionsM = buildTrussNodePositions(state.trussLengthM, trussType.nodeSpacingM || 0.5);
-  const trussMarkup = buildTrussSvgMarkup(trussType, nodePositionsM, toX, trussY);
+  const trussMarkup = buildTrussSvgMarkup(trussType, nodePositionsM, toX, trussY, results.trussBuildPlan);
 
   const supportMarkup = results.supports.map((support) => {
     const x = toX(support.positionM);
@@ -927,6 +1121,7 @@ function renderSvg(results) {
 function calculateResults() {
   const trussType = getCurrentTrussType();
   const nodePositionsM = buildTrussNodePositions(state.trussLengthM, trussType.nodeSpacingM || 0.5);
+  const trussBuildPlan = calculateTrussBuildPlan(state.trussLengthM, trussType.segmentLengthsM || []);
   const trussSelfWeightKg = state.trussLengthM * trussType.selfWeightKgPerM;
   const appliedLoadKg = state.loads.reduce((sum, load) => sum + load.weightKg, 0);
   const totalLoadKg = trussSelfWeightKg + appliedLoadKg;
@@ -978,6 +1173,7 @@ function calculateResults() {
     dynamicLoadFactor,
     totalCogM,
     trussCheck,
+    trussBuildPlan,
     supportAnalysis,
     supports: supports.map((support) => ({
       ...support,
@@ -1031,14 +1227,6 @@ function calculateTrussCapacityCheck(sortedSupports, effectiveLoads) {
     };
   }
 
-  if (longestSupportSpanM < table[0].spanM || longestSupportSpanM > table[table.length - 1].spanM) {
-    return {
-      status: "unsupported",
-      summary: "Pickup spacing is outside the stored manufacturer table range.",
-      details: `Current controlling pickup span is ${longestSupportSpanM.toFixed(2)} m; stored table range is ${table[0].spanM} m to ${table[table.length - 1].spanM} m.`
-    };
-  }
-
   const beamEnvelope = calculateBeamEnvelopeMetrics(state.trussLengthM, sortedSupports, effectiveLoads);
   const left = sortedSupports[0];
   const right = sortedSupports[1];
@@ -1047,7 +1235,7 @@ function calculateTrussCapacityCheck(sortedSupports, effectiveLoads) {
   const rightCantileverM = state.trussLengthM - sortedSupports[sortedSupports.length - 1].positionM;
   const maxCantileverForCheckM = 0.25;
 
-  const tableRow = table.find((row) => row.spanM >= supportSpanM) || table[table.length - 1];
+  const tableRow = getTableRowForSpan(table, supportSpanM);
   const factoredAddedLoadKg = state.loads.reduce((sum, load) => sum + load.weightKg * dynamicLoadFactor, 0);
   const maxSingleFactoredLoadKg = state.loads.reduce((max, load) => Math.max(max, load.weightKg * dynamicLoadFactor), 0);
   const allowableUdlTotalKg = tableRow.udlKgPerM * supportSpanM;
@@ -1073,13 +1261,13 @@ function calculateTrussCapacityCheck(sortedSupports, effectiveLoads) {
       maxSingleFactoredLoadKg,
       udlUsagePercent,
       cplUsagePercent,
-      summary: `Exact published table check using the ${tableRow.spanM.toFixed(1)} m manufacturer row for a ${supportSpanM.toFixed(2)} m support span.`,
-      details: "Comparison is based on factored additional suspended load against the stored static single-span manufacturer table. Truss self weight is not added again in this exact table-row comparison."
+      summary: `Exact published table check using ${describeTableLookup(tableRow, supportSpanM)}.`,
+      details: `Comparison is based on factored additional suspended load against the stored static single-span manufacturer table. ${describeTableLookupDetail(tableRow, supportSpanM)} Truss self weight is not added again in this exact table-row comparison.`
     };
   }
 
   const envelopeSpanM = longestSupportSpanM;
-  const envelopeRow = table.find((row) => row.spanM >= envelopeSpanM) || table[table.length - 1];
+  const envelopeRow = getTableRowForSpan(table, envelopeSpanM);
   const allowableEnvelopeUdlTotalKg = envelopeRow.udlKgPerM * envelopeSpanM;
   const allowableMomentKgM = Math.min(
     allowableEnvelopeUdlTotalKg * envelopeSpanM / 8,
@@ -1105,8 +1293,157 @@ function calculateTrussCapacityCheck(sortedSupports, effectiveLoads) {
     peakShearKg: beamEnvelope.maxAbsShearKg,
     momentUsagePercent,
     shearUsagePercent,
-    summary: `Table-derived beam check using the ${envelopeRow.spanM.toFixed(1)} m manufacturer row and the longest pickup span of ${envelopeSpanM.toFixed(2)} m.`,
-    details: `This is a conservative envelope check for arbitrary pickup layouts. It compares the beam-analysis peak moment and peak shear against moment and shear limits derived from the stored single-span manufacturer row. Current cantilevers are ${leftCantileverM.toFixed(2)} m left and ${rightCantileverM.toFixed(2)} m right.`
+    summary: `Table-derived beam check using ${describeTableLookup(envelopeRow, envelopeSpanM)}.`,
+    details: `This is a conservative envelope check for arbitrary pickup layouts. It compares the beam-analysis peak moment and peak shear against moment and shear limits derived from the stored single-span manufacturer table. ${describeTableLookupDetail(envelopeRow, envelopeSpanM)} Current cantilevers are ${leftCantileverM.toFixed(2)} m left and ${rightCantileverM.toFixed(2)} m right.`
+  };
+}
+
+function getTableRowForSpan(table, spanM) {
+  if (spanM <= table[0].spanM) {
+    if (Math.abs(spanM - table[0].spanM) < 1e-9) {
+      return {
+        ...table[0],
+        lookupMode: "exact",
+        sourceSpanM: table[0].spanM
+      };
+    }
+    const first = table[0];
+    const second = table[1] || table[0];
+    return {
+      spanM,
+      udlKgPerM: Math.max(0, extrapolateValue(first.spanM, first.udlKgPerM, second.spanM, second.udlKgPerM, spanM)),
+      cplKg: Math.max(0, extrapolateValue(first.spanM, first.cplKg, second.spanM, second.cplKg, spanM)),
+      lookupMode: "extrapolated-below",
+      sourceSpanM: `${first.spanM.toFixed(1)}-${second.spanM.toFixed(1)}`
+    };
+  }
+
+  for (let index = 0; index < table.length - 1; index += 1) {
+    const left = table[index];
+    const right = table[index + 1];
+    if (Math.abs(spanM - left.spanM) < 1e-9) {
+      return {
+        ...left,
+        lookupMode: "exact",
+        sourceSpanM: left.spanM
+      };
+    }
+    if (spanM > left.spanM && spanM < right.spanM) {
+      const ratio = (spanM - left.spanM) / (right.spanM - left.spanM);
+      return {
+        spanM,
+        udlKgPerM: left.udlKgPerM + (right.udlKgPerM - left.udlKgPerM) * ratio,
+        cplKg: left.cplKg + (right.cplKg - left.cplKg) * ratio,
+        lookupMode: "interpolated",
+        sourceSpanM: `${left.spanM.toFixed(1)}-${right.spanM.toFixed(1)}`
+      };
+    }
+  }
+
+  const last = table[table.length - 1];
+  const previous = table[table.length - 2] || last;
+  if (spanM > last.spanM) {
+    return {
+      spanM,
+      udlKgPerM: Math.max(0, extrapolateValue(previous.spanM, previous.udlKgPerM, last.spanM, last.udlKgPerM, spanM)),
+      cplKg: Math.max(0, extrapolateValue(previous.spanM, previous.cplKg, last.spanM, last.cplKg, spanM)),
+      lookupMode: "extrapolated-above",
+      sourceSpanM: `${previous.spanM.toFixed(1)}-${last.spanM.toFixed(1)}`
+    };
+  }
+  return {
+    ...last,
+    lookupMode: "exact",
+    sourceSpanM: last.spanM
+  };
+}
+
+function extrapolateValue(x1, y1, x2, y2, x) {
+  if (Math.abs(x2 - x1) < 1e-9) return y1;
+  return y1 + ((y2 - y1) * (x - x1)) / (x2 - x1);
+}
+
+function describeTableLookup(tableRow, spanM) {
+  if (tableRow.lookupMode === "extrapolated-below") {
+    return `an extrapolated manufacturer row below the minimum stored span using ${tableRow.sourceSpanM} m data for a ${spanM.toFixed(2)} m support span`;
+  }
+  if (tableRow.lookupMode === "interpolated") {
+    return `an interpolated manufacturer row between ${tableRow.sourceSpanM} m for a ${spanM.toFixed(2)} m support span`;
+  }
+  if (tableRow.lookupMode === "extrapolated-above") {
+    return `an extrapolated manufacturer row above the maximum stored span using ${tableRow.sourceSpanM} m data for a ${spanM.toFixed(2)} m support span`;
+  }
+  return `the ${tableRow.sourceSpanM.toFixed(1)} m manufacturer row for a ${spanM.toFixed(2)} m support span`;
+}
+
+function describeTableLookupDetail(tableRow, spanM) {
+  if (tableRow.lookupMode === "extrapolated-below") {
+    return `Because ${spanM.toFixed(2)} m is below the first stored span, the allowable values are linearly extrapolated from the first two stored table rows. `;
+  }
+  if (tableRow.lookupMode === "interpolated") {
+    return `Because ${spanM.toFixed(2)} m falls between published rows, the allowable values are linearly interpolated from the adjacent stored table rows. `;
+  }
+  if (tableRow.lookupMode === "extrapolated-above") {
+    return `Because ${spanM.toFixed(2)} m is above the last stored span, the allowable values are linearly extrapolated from the final two stored table rows and should be treated as an estimate only. `;
+  }
+  return "";
+}
+
+function calculateTrussBuildPlan(lengthM, segmentLengthsM) {
+  const availableLengths = [...new Set(segmentLengthsM)]
+    .filter((value) => value > 0)
+    .sort((a, b) => b - a);
+  if (!availableLengths.length) {
+    return {
+      isExact: false,
+      totalPieces: 0,
+      parts: [],
+      summary: "No stock truss segment lengths are configured for this truss type."
+    };
+  }
+
+  const targetUnits = Math.round(lengthM * PIECE_LENGTH_SCALE);
+  const segmentUnits = availableLengths.map((value) => ({
+    lengthM: value,
+    units: Math.round(value * PIECE_LENGTH_SCALE)
+  }));
+  const bestCounts = new Array(targetUnits + 1).fill(Infinity);
+  const previousIndex = new Array(targetUnits + 1).fill(-1);
+  bestCounts[0] = 0;
+
+  for (let units = 1; units <= targetUnits; units += 1) {
+    segmentUnits.forEach((segment, index) => {
+      if (segment.units <= units && bestCounts[units - segment.units] + 1 < bestCounts[units]) {
+        bestCounts[units] = bestCounts[units - segment.units] + 1;
+        previousIndex[units] = index;
+      }
+    });
+  }
+
+  if (!Number.isFinite(bestCounts[targetUnits])) {
+    return {
+      isExact: false,
+      totalPieces: 0,
+      parts: [],
+      summary: `Requested length ${lengthM.toFixed(2)} m cannot be built exactly from stored segment lengths ${availableLengths.map((value) => `${value.toFixed(2)} m`).join(", ")}.`
+    };
+  }
+
+  const parts = [];
+  let remainingUnits = targetUnits;
+  while (remainingUnits > 0) {
+    const segmentIndex = previousIndex[remainingUnits];
+    if (segmentIndex < 0) break;
+    parts.push({ lengthM: segmentUnits[segmentIndex].lengthM });
+    remainingUnits -= segmentUnits[segmentIndex].units;
+  }
+
+  parts.sort((a, b) => b.lengthM - a.lengthM);
+  return {
+    isExact: true,
+    totalPieces: parts.length,
+    parts,
+    summary: `${parts.length} truss piece${parts.length === 1 ? "" : "s"} used: ${parts.map((part) => `${part.lengthM.toFixed(2)} m`).join(" + ")} = ${lengthM.toFixed(2)} m.`
   };
 }
 
@@ -1198,14 +1535,14 @@ function getNodeHitToleranceM(trussType) {
   return Math.min(0.04, Math.max(0.015, (trussType.nodeSpacingM || 0.5) * 0.06));
 }
 
-function buildTrussSvgMarkup(trussType, nodePositionsM, toX, trussY) {
+function buildTrussSvgMarkup(trussType, nodePositionsM, toX, trussY, trussBuildPlan) {
   if (trussType.visualProfile === "tri") {
-    return buildTriTrussMarkup(nodePositionsM, toX, trussY);
+    return buildTriTrussMarkup(nodePositionsM, toX, trussY, trussBuildPlan);
   }
-  return buildBoxTrussMarkup(nodePositionsM, toX, trussY, trussType.visualProfile);
+  return buildBoxTrussMarkup(nodePositionsM, toX, trussY, trussType.visualProfile, trussBuildPlan);
 }
 
-function buildBoxTrussMarkup(nodePositionsM, toX, trussY, visualProfile) {
+function buildBoxTrussMarkup(nodePositionsM, toX, trussY, visualProfile, trussBuildPlan) {
   const profile = visualProfile === "box-heavy"
     ? { top: 40, bottom: 40, backTop: 24, backBottom: 24, backOffsetX: 12 }
     : visualProfile === "box-medium"
@@ -1253,10 +1590,19 @@ function buildBoxTrussMarkup(nodePositionsM, toX, trussY, visualProfile) {
     `);
   });
 
+  getTrussSectionBoundaries(trussBuildPlan).forEach((boundaryM) => {
+    const x = toX(boundaryM);
+    const bx = x + profile.backOffsetX;
+    parts.push(`
+      <line x1="${x}" y1="${frontTopY - 8}" x2="${x}" y2="${frontBottomY + 8}" stroke="#f5f7ff" stroke-width="3.2" opacity="0.9"></line>
+      <line x1="${bx}" y1="${backTopY - 6}" x2="${bx}" y2="${backBottomY + 6}" stroke="rgba(245,247,255,0.55)" stroke-width="2.2"></line>
+    `);
+  });
+
   return parts.join("");
 }
 
-function buildTriTrussMarkup(nodePositionsM, toX, trussY) {
+function buildTriTrussMarkup(nodePositionsM, toX, trussY, trussBuildPlan) {
   const apexY = trussY - 42;
   const baseY = trussY + 32;
   const parts = [];
@@ -1283,7 +1629,26 @@ function buildTriTrussMarkup(nodePositionsM, toX, trussY) {
     `);
   });
 
+  getTrussSectionBoundaries(trussBuildPlan).forEach((boundaryM) => {
+    const x = toX(boundaryM);
+    parts.push(`
+      <line x1="${x}" y1="${apexY - 8}" x2="${x}" y2="${baseY + 8}" stroke="#f5f7ff" stroke-width="3"></line>
+    `);
+  });
+
   return parts.join("");
+}
+
+function getTrussSectionBoundaries(trussBuildPlan) {
+  const boundaries = [];
+  let runningLengthM = 0;
+  trussBuildPlan.parts.forEach((part, index) => {
+    runningLengthM += part.lengthM;
+    if (index < trussBuildPlan.parts.length - 1) {
+      boundaries.push(Number(runningLengthM.toFixed(4)));
+    }
+  });
+  return boundaries;
 }
 
 function analyzeBeamSupportSystem(lengthM, sortedSupports, effectiveLoads) {
@@ -1599,6 +1964,14 @@ function escapeCsv(value) {
     return `"${text.replaceAll('"', '""')}"`;
   }
   return text;
+}
+
+function slugify(value) {
+  return String(value ?? "truss-project")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    || "truss-project";
 }
 
 function buildBeamNodePositions(lengthM, sortedSupports, effectiveLoads) {

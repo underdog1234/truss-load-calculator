@@ -28,6 +28,10 @@
         </button>
         <div class="panel-body">
           <label>
+            Project Name
+            <input id="projectName" type="text" value="Untitled Project">
+          </label>
+          <label>
             Truss Type
             <select id="trussType"></select>
           </label>
@@ -99,6 +103,7 @@
           <div class="action-row">
             <button id="spacingDistributeBtn" type="button">Use Set Spacing</button>
             <button id="spanDistributeBtn" class="secondary" type="button">Distribute Across Span</button>
+            <button id="betweenDistributeBtn" class="secondary" type="button">Align Between Ends</button>
           </div>
         </div>
       </div>
@@ -120,38 +125,55 @@
     </aside>
 
     <main class="main">
-      <section class="panel canvas-panel">
+      <div id="reportContent" class="report-content">
+        <section class="panel project-panel">
+          <div class="panel-header">
+            <h2 id="projectTitle">Untitled Project</h2>
+          </div>
+        </section>
+
+        <section class="panel canvas-panel">
+          <div class="panel-header">
+            <h2>Truss View</h2>
+            <div class="legend">
+              <span><i class="legend-support"></i> Pickup</span>
+              <span><i class="legend-load"></i> Load Block</span>
+              <span><i class="legend-cog"></i> COG</span>
+            </div>
+          </div>
+          <svg id="trussSvg" viewBox="0 0 1200 460" width="1200" height="460" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Interactive truss diagram"></svg>
+        </section>
+
+        <section class="panel">
+          <h2>Load Readout</h2>
+          <div id="summaryCards" class="summary-cards"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Rigging Notes</h2>
+          <div id="warningsList" class="stack notes"></div>
+        </section>
+      </div>
+
+      <section class="panel project-actions-panel">
         <div class="panel-header">
-          <h2>Truss View</h2>
-          <div class="legend">
-            <span><i class="legend-support"></i> Pickup</span>
-            <span><i class="legend-load"></i> Load Block</span>
-            <span><i class="legend-cog"></i> COG</span>
+          <h2>Project</h2>
+          <div class="button-group">
+            <button id="exportSettingsBtn" class="secondary" type="button">Export Settings</button>
+            <button id="importSettingsBtn" class="secondary" type="button">Import Settings</button>
+            <button id="savePdfBtn" class="secondary" type="button">Save PDF</button>
+            <button id="printBtn" class="secondary" type="button">Print Report</button>
+            <button id="exportBtn" type="button">Export CSV</button>
           </div>
         </div>
-        <svg id="trussSvg" viewBox="0 0 1200 460" role="img" aria-label="Interactive truss diagram"></svg>
-      </section>
-
-      <section class="panel">
-        <h2>Load Readout</h2>
-        <div id="summaryCards" class="summary-cards"></div>
-      </section>
-
-      <section class="panel">
-        <h2>Rigging Notes</h2>
-        <div id="warningsList" class="stack notes"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-header">
-          <h2>Export</h2>
-          <button id="exportBtn" type="button">Export CSV</button>
-        </div>
-        <p class="muted small">Exports truss setup, pickups, loads, and calculated reactions as a CSV worksheet.</p>
+        <p class="muted small">Export the current rig plan as CSV or JSON, import a saved project, or print the report-style center panels.</p>
+        <input id="importSettingsFile" type="file" accept=".json,application/json" hidden>
       </section>
     </main>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
