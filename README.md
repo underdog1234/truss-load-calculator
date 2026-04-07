@@ -52,14 +52,14 @@ It is designed for preliminary rigging and production planning, not final engine
 - Truss loadings now work for any pickup spacing by using:
   -interpolation between table rows when the span sits inside the stored range
   -extrapolation below the first row
--Each load card now has a Center Load button.
--separate scrollbars for the left sidebar and right content area
--a warning in Rigging Notes if the exact length is not possible
--Added JSON import/export for project settings
--Added print/report layout for the center content only
--Added PDF export workflow
--Added motor auto-spacing tools and load centering
--Added more realistic truss drawing with section joins
+- Each load card now has a Center Load button.
+- separate scrollbars for the left sidebar and right content area
+- a warning in Rigging Notes if the exact length is not possible
+- Added JSON import/export for project settings
+- Added print/report layout for the center content only
+- Added PDF export workflow
+- Added motor auto-spacing tools and load centering
+- Added more realistic truss drawing with section joins
 
 ## Included Truss Types
 
