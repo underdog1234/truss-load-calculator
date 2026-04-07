@@ -44,14 +44,14 @@ It is designed for preliminary rigging and production planning, not final engine
 `v0.9.0` includes the current planning workflow and reporting features:
 
 - There’s a new Align Between Ends button in Motor Spacing.
-  -It keeps the two end motors where they are and evenly spaces the motors between them.
+   - It keeps the two end motors where they are and evenly spaces the motors between them.
 - The app now builds a Truss Build card that shows:
-  -whether the requested length can be built exactly from stored stock pieces
-  -how many pieces are used
-  -a visual piece breakdown
+  - whether the requested length can be built exactly from stored stock pieces
+  - how many pieces are used
+  - a visual piece breakdown
 - Truss loadings now work for any pickup spacing by using:
-  -interpolation between table rows when the span sits inside the stored range
-  -extrapolation below the first row
+  - interpolation between table rows when the span sits inside the stored range
+  - extrapolation below the first row
 - Each load card now has a Center Load button.
 - separate scrollbars for the left sidebar and right content area
 - a warning in Rigging Notes if the exact length is not possible
