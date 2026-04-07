@@ -43,19 +43,23 @@ It is designed for preliminary rigging and production planning, not final engine
 
 `v0.9.0` includes the current planning workflow and reporting features:
 
-- Added Global Truss and ShowQuip truss libraries currently used in the app
-- Added arbitrary pickup-position beam analysis
-- Separated suspended motor load from roof-point load
-- Added motor self weight and global hardware weight per pickup
-- Added dynamic factor presets and factored load reporting
-- Added truss build planning from stored stock lengths
-- Added JSON import/export for project settings
-- Added CSV export
-- Added print/report layout for the center content only
-- Added PDF export workflow
-- Added motor auto-spacing tools and load centering
-- Added usage bars, beam-analysis summaries, and rigging-note warnings
-- Added more realistic truss drawing with section joins
+-There’s a new Align Between Ends button in Motor Spacing.
+  -It keeps the two end motors where they are and evenly spaces the motors between them.
+-The app now builds a Truss Build card that shows:
+  -whether the requested length can be built exactly from stored stock pieces
+  -how many pieces are used
+  -a visual piece breakdown
+-Truss loadings now work for any pickup spacing by using:
+  -interpolation between table rows when the span sits inside the stored range
+  -extrapolation below the first row
+-Each load card now has a Center Load button.
+-separate scrollbars for the left sidebar and right content area
+-a warning in Rigging Notes if the exact length is not possible
+-Added JSON import/export for project settings
+-Added print/report layout for the center content only
+-Added PDF export workflow
+-Added motor auto-spacing tools and load centering
+-Added more realistic truss drawing with section joins
 
 ## Included Truss Types
 
